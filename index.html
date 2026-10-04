@@ -250,21 +250,60 @@
       </div>
     </section>
 
-    <!-- Tool ticker -->
-    <div class="ticker" aria-hidden="true">
-      <div class="ticker__track">
-        <span>Microsoft Sentinel</span><span>Defender for Endpoint</span><span>Defender XDR</span><span>CrowdStrike
-          Falcon</span><span>IBM QRadar</span><span>Rapid7 InsightIDR</span><span>Rapid7
-          InsightVM</span><span>Kusto Query Language</span><span>IBM Guardium</span><span>Tripwire</span>
-        <span>BeyondTrust</span><span>Azure</span><span>Microsoft 365</span><span>Active
-          Directory</span><span>Power BI</span><span>ISO 27001</span><span>PCI DSS</span><span>NIST CSF</span>
-        <span>Microsoft Sentinel</span><span>Defender for Endpoint</span><span>Defender XDR</span><span>CrowdStrike
-          Falcon</span><span>IBM QRadar</span><span>Rapid7 InsightIDR</span><span>Rapid7
-          InsightVM</span><span>Kusto Query Language</span><span>IBM Guardium</span><span>Tripwire</span>
-        <span>BeyondTrust</span><span>Azure</span><span>Microsoft 365</span><span>Active
-          Directory</span><span>Power BI</span><span>ISO 27001</span><span>PCI DSS</span><span>NIST CSF</span>
+    <!-- Connected sources: split-flap board -->
+    <section class="board" aria-labelledby="boardTitle">
+      <div class="shell">
+        <div class="board__frame" data-reveal>
+          <div class="board__head">
+            <h2 class="board__title" id="boardTitle">Connected sources</h2>
+            <span class="board__live"><i></i>Live</span>
+            <span class="board__clock" id="boardClock" aria-hidden="true">00:00:00 UTC</span>
+          </div>
+          <div class="board__cols" aria-hidden="true">
+            <span>Source</span><span>Platform</span><span>Role</span><span>Status</span>
+          </div>
+          <ul class="board__rows" aria-hidden="true">
+          <li class="brow" data-tools="Sentinel|QRadar|InsightIDR|Seceon aSIEM">
+            <span class="brow__type">SIEM</span>
+            <span class="brow__val">Sentinel</span>
+            <span class="brow__role">Correlation and hunting</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          <li class="brow" data-tools="CrowdStrike|MS Defender|Defender XDR">
+            <span class="brow__type">EDR / XDR</span>
+            <span class="brow__val">CrowdStrike</span>
+            <span class="brow__role">Endpoint detection and response</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          <li class="brow" data-tools="InsightVM|AppSpider">
+            <span class="brow__type">Vuln mgmt</span>
+            <span class="brow__val">InsightVM</span>
+            <span class="brow__role">Exposure scanning</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          <li class="brow" data-tools="Guardium|BeyondTrust|Thycotic|Tripwire">
+            <span class="brow__type">Data + access</span>
+            <span class="brow__val">Guardium</span>
+            <span class="brow__role">DAM, PAM and FIM controls</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          <li class="brow" data-tools="Azure|Microsoft 365|Active Directory">
+            <span class="brow__type">Cloud + identity</span>
+            <span class="brow__val">Azure</span>
+            <span class="brow__role">Tenant and directory monitoring</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          <li class="brow" data-tools="ISO 27001|PCI DSS|NIST CSF|GDPR">
+            <span class="brow__type">Frameworks</span>
+            <span class="brow__val">ISO 27001</span>
+            <span class="brow__role">Compliance assurance</span>
+            <span class="brow__st"><i></i><span>Online</span></span>
+          </li>
+          </ul>
+          <p class="vh">Platforms I work with: Sentinel, QRadar, InsightIDR, Seceon aSIEM, CrowdStrike, MS Defender, Defender XDR, InsightVM, AppSpider, Guardium, BeyondTrust, Thycotic, Tripwire, Azure, Microsoft 365, Active Directory, ISO 27001, PCI DSS, NIST CSF, GDPR.</p>
+        </div>
       </div>
-    </div>
+    </section>
 
     <!-- =============================================================== About -->
     <section class="section" id="about" data-section>

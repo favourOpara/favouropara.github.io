@@ -111,22 +111,12 @@
   var heroGrid = $(".hero__grid");
   var hero = $(".hero");
 
-  /* ------------------------------------------------- Ticker reacts to scroll */
+  /* ---------------------------------------------- Hero scroll parallax */
 
-  var track = $(".ticker__track");
-  var tickerAnim = null;
-  if (track && track.getAnimations) {
-    tickerAnim = track.getAnimations()[0] || null;
-  }
-
-  var lastY = window.scrollY;
-  var vel = 0;
   var scrollTicking = false;
 
   function onScroll() {
     var y = window.scrollY;
-    vel = Math.max(-60, Math.min(60, y - lastY));
-    lastY = y;
 
     if (hero && heroIn) {
       var hh = hero.offsetHeight || 1;
@@ -143,17 +133,6 @@
     scrollTicking = true;
     requestAnimationFrame(onScroll);
   }, { passive: true });
-
-  // Ease the ticker's speed back toward normal after each scroll burst.
-  if (tickerAnim) {
-    (function tick() {
-      var target = 1 + Math.abs(vel) / 6;
-      var cur = tickerAnim.playbackRate;
-      tickerAnim.playbackRate = cur + (target - cur) * 0.12;
-      vel *= 0.9;
-      requestAnimationFrame(tick);
-    })();
-  }
 
   /* ------------------------------------------------------ Risk matrix wave */
 

@@ -455,6 +455,182 @@
     });
   })();
 
+  /* ------------------------------------------ Split-flap sources board */
+
+  (function board() {
+    var rows = $$(".brow");
+    if (!rows.length) return;
+
+    var frame = $(".board__frame");
+    var TILES = 16;
+    var FD = 70; // ms per half-flap
+    var CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+.&";
+
+    function tileEl() {
+      var t = document.createElement("span");
+      t.className = "tile";
+      t.style.setProperty("--fd", FD + "ms");
+      t.innerHTML =
+        '<span class="half half--top"><b></b></span>' +
+        '<span class="half half--bot"><b></b></span>' +
+        '<span class="half half--top leaf"><b></b></span>' +
+        '<span class="half half--bot leaf"><b></b></span>';
+      t._b = $$("b", t);
+      t._ch = " ";
+      return t;
+    }
+
+    function setStatic(t, ch) {
+      t._b[0].textContent = ch;
+      t._b[1].textContent = ch;
+      t._ch = ch;
+    }
+
+    // One mechanical flip from the current character to the next.
+    function flipOnce(t, ch, done) {
+      var cur = t._ch;
+      t._b[0].textContent = ch;   // new top, revealed as the leaf falls
+      t._b[1].textContent = cur;  // old bottom, covered as the leaf lands
+      t._b[2].textContent = cur;  // falling leaf: old top
+      t._b[3].textContent = ch;   // landing leaf: new bottom
+      t.classList.remove("is-flip");
+      void t.offsetWidth;
+      t.classList.add("is-flip");
+      setTimeout(function () {
+        t._b[1].textContent = ch;
+        t.classList.remove("is-flip");
+        t._ch = ch;
+        done();
+      }, FD * 2 + 10);
+    }
+
+    // Real boards step through a few cards before landing on the target.
+    function spinTo(t, ch, delay) {
+      if (t._ch === ch) return;
+      var steps = [];
+      var n = 1 + Math.floor(Math.random() * 3);
+      for (var i = 0; i < n; i++) steps.push(CHARS.charAt(1 + Math.floor(Math.random() * (CHARS.length - 1))));
+      steps.push(ch);
+
+      setTimeout(function next() {
+        if (!steps.length) return;
+        flipOnce(t, steps.shift(), next);
+      }, delay);
+    }
+
+    function pad(word) {
+      word = word.toUpperCase().slice(0, TILES);
+      while (word.length < TILES) word += " ";
+      return word;
+    }
+
+    rows.forEach(function (row) {
+      var host = $(".brow__val", row);
+      var tools = (row.getAttribute("data-tools") || "").split("|").filter(Boolean);
+      if (!host || !tools.length) return;
+
+      var flaps = document.createElement("span");
+      flaps.className = "flaps";
+      var tiles = [];
+      for (var i = 0; i < TILES; i++) {
+        var t = tileEl();
+        tiles.push(t);
+        flaps.appendChild(t);
+      }
+      host.replaceWith(flaps);
+
+      row._tiles = tiles;
+      row._tools = tools;
+      row._at = -1;
+    });
+
+    function show(row, word, animate) {
+      var text = pad(word);
+      row._tiles.forEach(function (t, i) {
+        var ch = text.charAt(i);
+        if (animate) spinTo(t, ch, i * 28);
+        else setStatic(t, ch);
+      });
+      if (animate) {
+        var st = $(".brow__st span", row);
+        row.classList.add("is-sync");
+        if (st) st.textContent = "Sync";
+        setTimeout(function () {
+          row.classList.remove("is-sync");
+          if (st) st.textContent = "Online";
+        }, TILES * 28 + FD * 8);
+      }
+    }
+
+    function advance(row, animate) {
+      row._at = (row._at + 1) % row._tools.length;
+      show(row, row._tools[row._at], animate);
+    }
+
+    // Start blank so the first pass flips every name into place.
+    rows.forEach(function (row) {
+      if (!row._tiles) return;
+      show(row, "", false);
+    });
+
+    var started = false;
+    var timer = null;
+    var turn = 0;
+
+    function cycle() {
+      // Rows take turns, so there is always one board line in motion.
+      var row = rows[turn % rows.length];
+      turn++;
+      if (row._tiles && row._tools.length > 1) advance(row, !reduced);
+    }
+
+    function start() {
+      if (!started) {
+        started = true;
+        rows.forEach(function (row, i) {
+          if (!row._tiles) return;
+          if (reduced) advance(row, false);
+          else setTimeout(function () { advance(row, true); }, 250 + i * 220);
+        });
+      }
+      if (!timer) timer = setInterval(cycle, reduced ? 4000 : 1700);
+    }
+
+    function stop() {
+      clearInterval(timer);
+      timer = null;
+    }
+
+    var inView = !("IntersectionObserver" in window && frame);
+
+    if (!inView) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          inView = en.isIntersecting;
+          if (inView && !document.hidden) start();
+          else stop();
+        });
+      }, { threshold: 0.25 }).observe(frame);
+    } else {
+      start();
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) stop();
+      else if (inView) start();
+    });
+
+    var clock = $("#boardClock");
+    if (clock) {
+      var tickClock = function () {
+        var d = new Date();
+        clock.textContent = d.toISOString().slice(11, 19) + " UTC";
+      };
+      tickClock();
+      setInterval(tickClock, 1000);
+    }
+  })();
+
   /* ------------------------------------------------------- Nav + progress */
 
   var nav = $(".nav");
