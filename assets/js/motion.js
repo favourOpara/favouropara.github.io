@@ -107,6 +107,31 @@
   var grad = $(".hero__title .grad");
   if (grad) grad.setAttribute("data-text", grad.textContent);
 
+  /* ------------------------------------- Console launcher types commands */
+
+  var launchCmd = $("#launchCmd");
+  if (launchCmd) {
+    var CMDS = ["open analyst_console", "whoami", "certs", "goto lab", "experience", "hire me"];
+    var ci = 0, pos = CMDS[0].length, back = true;
+
+    setTimeout(function typeCmd() {
+      var word = CMDS[ci];
+      if (back) {
+        pos--;
+        launchCmd.textContent = word.slice(0, pos);
+        if (pos > 0) return setTimeout(typeCmd, 32);
+        back = false;
+        ci = (ci + 1) % CMDS.length;
+        return setTimeout(typeCmd, 260);
+      }
+      pos++;
+      launchCmd.textContent = CMDS[ci].slice(0, pos);
+      if (pos < CMDS[ci].length) return setTimeout(typeCmd, 70 + Math.random() * 60);
+      back = true;
+      setTimeout(typeCmd, 2200);
+    }, 4200);
+  }
+
   var heroIn = $(".hero__in");
   var heroGrid = $(".hero__grid");
   var hero = $(".hero");

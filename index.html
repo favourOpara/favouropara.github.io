@@ -31,7 +31,7 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
-  <link rel="stylesheet" href="assets/css/site.css?v=20261004b">
+  <link rel="stylesheet" href="assets/css/site.css?v=20261004d">
 
   <script type="application/ld+json">
   {
@@ -114,13 +114,15 @@
       </nav>
 
       <div class="nav__tools">
-        <button class="icon-btn term-btn" type="button" aria-label="Open the analyst console" aria-haspopup="dialog"
-          title="Analyst console ( / )">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+        <button class="term-btn glow-ring" type="button" data-console aria-label="Open the analyst console"
+          aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
             stroke-linejoin="round" aria-hidden="true">
             <rect x="2.5" y="4" width="19" height="16" rx="2.5" />
             <path d="M7 9.5l3 2.5-3 2.5M12.5 15H17" />
           </svg>
+          <span class="term-btn__t" aria-hidden="true">Console</span>
+          <kbd class="term-btn__k kb-only" aria-hidden="true">/</kbd>
         </button>
 
         <button class="icon-btn theme-btn" type="button" aria-label="Switch to light theme">
@@ -230,10 +232,23 @@
             <a class="btn btn--ghost" href="#work">Review my case files</a>
           </div>
 
-          <p class="hero__hint">
-            <a href="#lab">Try the triage lab</a><span class="kb-only">, or press <kbd>/</kbd> for the analyst
-              console</span>.
-          </p>
+          <div class="launch">
+            <button class="launch__btn glow-ring" type="button" data-console aria-haspopup="dialog"
+              aria-label="Open the analyst console">
+              <span class="launch__ps" aria-hidden="true">analyst@favouropara:~$</span>
+              <span class="launch__cmd" id="launchCmd" aria-hidden="true">open analyst_console</span>
+              <span class="launch__caret" aria-hidden="true"></span>
+              <span class="launch__go" aria-hidden="true">
+                <kbd class="kb-only">/</kbd>
+                <span>Open console</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </span>
+            </button>
+            <a class="launch__alt" href="#lab">or work the triage lab</a>
+          </div>
 
           <dl class="metrics">
             <div class="metric">
@@ -1553,8 +1568,8 @@ SigninLogs
     </form>
   </dialog>
 
-  <script src="assets/js/site.js?v=20261004b" defer></script>
-  <script src="assets/js/motion.js?v=20261004b" defer></script>
+  <script src="assets/js/site.js?v=20261004d" defer></script>
+  <script src="assets/js/motion.js?v=20261004d" defer></script>
 </body>
 
 </html>

@@ -371,7 +371,8 @@
           ctx.arc(tn.x, tn.y, 4.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "500 12px 'IBM Plex Mono', monospace";
-          ctx.fillText((age * 4 | 0) % 2 ? "ALERT" : "ALERT_", tn.x + 14, tn.y - 12);
+          // Labels would sit on top of the copy on narrow screens.
+          if (w > 900) ctx.fillText((age * 4 | 0) % 2 ? "ALERT" : "ALERT_", tn.x + 14, tn.y - 12);
         } else if (age < 3) {
           var q = (age - 1.8) / 1.2;
           var e2 = 1 - Math.pow(1 - q, 3);
@@ -394,7 +395,8 @@
           ctx.arc(tn.x, tn.y, 4, 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "500 12px 'IBM Plex Mono', monospace";
-          ctx.fillText("CONTAINED", tn.x + 16, tn.y - 14);
+          // Labels would sit on top of the copy on narrow screens.
+          if (w > 900) ctx.fillText("CONTAINED", tn.x + 16, tn.y - 14);
         } else {
           threat = null;
           nextThreat = ts + 3500 + Math.random() * 4000;
@@ -1329,10 +1331,10 @@
     var out = $("#termOut");
     var form = $("#termForm");
     var input = $("#termCmd");
-    var openBtn = $(".term-btn");
+    var openBtns = $$("[data-console]");
 
     if (!dlg || !out || !form || !input || typeof dlg.showModal !== "function") {
-      if (openBtn) openBtn.hidden = true;
+      openBtns.forEach(function (b) { b.hidden = true; });
       $$(".kb-only").forEach(function (n) { n.hidden = true; });
       return;
     }
@@ -1656,7 +1658,7 @@
     var x = $(".term__x", dlg);
     if (x) x.addEventListener("click", close);
 
-    if (openBtn) openBtn.addEventListener("click", open);
+    openBtns.forEach(function (b) { b.addEventListener("click", open); });
 
     document.addEventListener("keydown", function (e) {
       if (dlg.open) return;
