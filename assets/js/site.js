@@ -669,6 +669,738 @@
     });
   })();
 
+  /* ------------------------------------------------------- Triage lab */
+
+  (function lab() {
+    var queueEl = $("#labQueue");
+    var alertEl = $("#labAlert");
+    var scoreEl = $("#labScore");
+    if (!queueEl || !alertEl) return;
+
+    var BEST_KEY = "fo-lab-best";
+    var ATTACK = "https://attack.mitre.org/techniques/";
+
+    var VERDICTS = [
+      { id: "fp", label: "False positive", hint: "The rule misfired. Tune it." },
+      { id: "benign", label: "Benign", hint: "Real activity, and authorised." },
+      { id: "escalate", label: "Escalate", hint: "Suspicious. Hand it to IR." }
+    ];
+
+    /* Synthetic alerts. Addresses use the RFC 5737 documentation ranges and
+       domains use example.com, so nothing here points at a real system. */
+    var ALERTS = [
+      {
+        id: "SEN-4471", sev: "medium", src: "Microsoft Sentinel",
+        title: "Impossible travel: sign-ins from two countries 38 minutes apart",
+        ev: [
+          ["User", "a.okafor@corp.example.com"],
+          ["Sign-in 1", "Lagos, NG / 198.51.100.24 / 08:02 UTC"],
+          ["Sign-in 2", "London, GB / 203.0.113.10 / 08:40 UTC"],
+          ["Sign-in 2 owner", "Corporate VPN egress, Azure UK South"],
+          ["MFA", "Satisfied, number matching"],
+          ["Device", "Intune compliant, same device ID on both"]
+        ],
+        answer: "benign",
+        why: "The user didn't travel, the traffic did. The second sign-in leaves through the company's own VPN concentrator in UK South, from the same compliant device, with MFA satisfied. Close as benign, then add the VPN egress range as a trusted named location so the analytic stops treating it as a separate country.",
+        tags: [["T1078", "Valid Accounts (ruled out)"]]
+      },
+      {
+        id: "MDE-2093", sev: "high", src: "Defender for Endpoint",
+        title: "Office application spawned hidden, encoded PowerShell",
+        ev: [
+          ["Host", "FIN-WS-0142"],
+          ["Parent process", "WINWORD.EXE"],
+          ["Child process", "powershell.exe -nop -w hidden -enc [1,184 chars, redacted]"],
+          ["File", "Invoice_Q3_overdue.docm, external sender, first seen in tenant"],
+          ["Network", "HTTPS to update-check.example.net, domain registered 3 days ago"]
+        ],
+        answer: "escalate",
+        why: "Word has no business launching hidden, encoded PowerShell. A macro-enabled attachment from an external sender, never seen in the tenant before, followed by an outbound call to a days-old domain is a textbook initial access chain. Isolate the host, purge the email from every mailbox it reached, block the domain, decode the command and escalate to IR with all of it attached.",
+        tags: [["T1566.001", "Spearphishing Attachment"], ["T1204.002", "Malicious File"], ["T1059.001", "PowerShell"]]
+      },
+      {
+        id: "IDS-0871", sev: "medium", src: "Network IDS",
+        title: "Internal host sweeping ports and attempting SMB authentication",
+        ev: [
+          ["Source", "10.20.4.15 (vuln-scan-01)"],
+          ["Targets", "1,284 hosts across 10.20.0.0/16"],
+          ["Activity", "TCP 22, 445, 3389 sweep; SMB auth as svc-insightvm"],
+          ["Time", "Saturday 01:00 to 03:30 UTC"],
+          ["Change record", "CHG-20931, approved weekly authenticated scan"]
+        ],
+        answer: "benign",
+        why: "This is the Rapid7 InsightVM scan engine doing exactly what the change record says, inside the approved window, with its own service account. Close as benign. Then check that any suppression is scoped to that host, that account and that window only, so the same box sweeping the network at 14:00 on a Tuesday still fires.",
+        tags: [["T1046", "Network Service Discovery (authorised)"]]
+      },
+      {
+        id: "CS-7710", sev: "critical", src: "CrowdStrike Falcon",
+        title: "Credential dumping: LSASS process memory accessed",
+        ev: [
+          ["Host", "HR-WS-0057"],
+          ["Command", "procdump64.exe -ma lsass.exe C:\\Users\\Public\\l.dmp"],
+          ["Account", "helpdesk.tmp, created 6 days ago"],
+          ["Time", "02:14 local"],
+          ["Change record", "None"],
+          ["Preceded by", "RDP logon from 10.20.9.33 at 02:06"]
+        ],
+        answer: "escalate",
+        why: "ProcDump is legitimate Sysinternals software, which is precisely why attackers use it. An LSASS dump written to a world-readable folder at 02:14, by a six-day-old account, with no change record, straight after a fresh RDP session, is credential theft until proven otherwise. Contain the host, disable the account, scope everything 10.20.9.33 has touched, and treat every credential cached on that machine as burned.",
+        tags: [["T1003.001", "LSASS Memory"], ["T1021.001", "Remote Desktop Protocol"]]
+      },
+      {
+        id: "DLP-3318", sev: "medium", src: "DLP, custom regex rule",
+        title: "Outbound email matched payment card number pattern",
+        ev: [
+          ["Sender", "logistics@corp.example.com"],
+          ["Recipient", "Contracted freight carrier"],
+          ["Match", "4929 1830 2214 5568 (16 digits)"],
+          ["Luhn checksum", "Fail"],
+          ["Context", "\"Consignment ref\" column in a shipping manifest"],
+          ["History", "14 alerts this week, same manifest template"]
+        ],
+        answer: "fp",
+        why: "Sixteen digits is not a card number. The match fails the Luhn checksum, sits in a consignment reference column, and the same template has fired fourteen times this week. Close as a false positive and fix the detection: swap the bare regex for a checksum-validated card pattern with supporting keywords nearby, so the PCI DSS control keeps its teeth without burying the queue.",
+        tags: [["", "PCI DSS"], ["", "Detection tuning"]]
+      },
+      {
+        id: "SEN-4502", sev: "high", src: "Microsoft Sentinel",
+        title: "Password spray against Entra ID with one successful sign-in",
+        ev: [
+          ["Source IP", "203.0.113.47, on threat intel watchlist"],
+          ["Failures", "312 across 141 accounts in 20 minutes"],
+          ["Successes", "1: svc-reporting@corp.example.com"],
+          ["Protocol", "IMAP (legacy authentication)"],
+          ["MFA", "Not applied: legacy protocol"]
+        ],
+        answer: "escalate",
+        why: "The failures alone would be block and monitor. The single success changes everything: a service account authenticated over legacy IMAP, which never meets an MFA prompt. Treat it as compromised. Disable the account, revoke sessions, rotate the credential, review mailbox rules and data access since the sign-in, and close the legacy auth gap with conditional access.",
+        tags: [["T1110.003", "Password Spraying"], ["T1078", "Valid Accounts"]]
+      }
+    ];
+
+    var cur = 0;
+    var shownAt = 0;
+    var done = {};
+    var labEl = alertEl.closest(".lab");
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+
+    function verdictLabel(id) {
+      for (var i = 0; i < VERDICTS.length; i++) if (VERDICTS[i].id === id) return VERDICTS[i].label;
+      return id;
+    }
+
+    function stats() {
+      var n = 0, ok = 0, ms = 0;
+      ALERTS.forEach(function (a) {
+        var d = done[a.id];
+        if (!d) return;
+        n++;
+        if (d.ok) ok++;
+        ms += d.ms;
+      });
+      return { n: n, ok: ok, avg: n ? ms / n : 0 };
+    }
+
+    function secs(ms) {
+      return (ms / 1000).toFixed(1) + "s";
+    }
+
+    function renderScore() {
+      var s = stats();
+      if (scoreEl) scoreEl.textContent = s.ok + " / " + s.n + " correct";
+    }
+
+    function renderQueue() {
+      queueEl.textContent = "";
+      ALERTS.forEach(function (a, i) {
+        var li = el("li");
+        var b = el("button", "queue__item");
+        b.type = "button";
+        b.setAttribute("data-sev", a.sev);
+        b.setAttribute("aria-current", String(i === cur));
+
+        var d = done[a.id];
+        var st = el("span", "queue__st" + (d ? (d.ok ? " is-ok" : " is-miss") : ""),
+          d ? (d.ok ? "match" : "differs") : "new");
+
+        var mid = el("span");
+        mid.appendChild(el("span", "queue__id", a.id + " / " + a.sev));
+        mid.appendChild(el("span", "queue__t", a.title));
+
+        b.appendChild(el("span", "queue__sev"));
+        b.appendChild(mid);
+        b.appendChild(st);
+        b.setAttribute("aria-label", a.id + ", " + a.sev + " severity: " + a.title +
+          (d ? ". Triaged, " + (d.ok ? "matches my call" : "differs from my call") : ". Not yet triaged"));
+
+        b.addEventListener("click", function () { show(i, true); });
+        li.appendChild(b);
+        queueEl.appendChild(li);
+      });
+    }
+
+    function tagList(tags) {
+      var wrap = el("div", "attack");
+      tags.forEach(function (t) {
+        if (t[0]) {
+          var a = el("a", null, t[0] + " " + t[1]);
+          a.href = ATTACK + t[0].replace(".", "/") + "/";
+          a.target = "_blank";
+          a.rel = "noopener";
+          wrap.appendChild(a);
+        } else {
+          wrap.appendChild(el("span", null, t[1]));
+        }
+      });
+      return wrap;
+    }
+
+    function debrief(a, d) {
+      var box = el("div", "debrief " + (d.ok ? "is-ok" : "is-miss"));
+      var res = el("p", "debrief__res");
+      res.appendChild(el("b", null, d.ok ? "Same call as mine" : "I'd call it " + verdictLabel(a.answer)));
+      res.appendChild(el("span", null, "You: " + verdictLabel(d.pick)));
+      res.appendChild(el("span", null, "Time to verdict " + secs(d.ms)));
+      box.appendChild(res);
+      box.appendChild(el("p", null, a.why));
+      box.appendChild(tagList(a.tags));
+
+      var next = el("button", "btn");
+      next.type = "button";
+      var remaining = ALERTS.filter(function (x) { return !done[x.id]; }).length;
+      next.textContent = remaining ? "Next alert" : "End shift and see the summary";
+      next.addEventListener("click", advance);
+      box.appendChild(next);
+      return box;
+    }
+
+    function show(i, focus) {
+      cur = i;
+      var a = ALERTS[i];
+      var d = done[a.id];
+
+      alertEl.textContent = "";
+      alertEl.setAttribute("data-sev", a.sev);
+
+      var head = el("div", "alert__head");
+      head.appendChild(el("span", "sev-badge", a.sev));
+      head.appendChild(el("span", null, a.id));
+      head.appendChild(el("span", null, a.src));
+      alertEl.appendChild(head);
+
+      alertEl.appendChild(el("h3", null, a.title));
+
+      var dl = el("dl", "evidence");
+      a.ev.forEach(function (row) {
+        var r = el("div");
+        r.appendChild(el("dt", null, row[0]));
+        r.appendChild(el("dd", null, row[1]));
+        dl.appendChild(r);
+      });
+      alertEl.appendChild(dl);
+
+      var vs = el("div", "verdicts");
+      vs.setAttribute("role", "group");
+      vs.setAttribute("aria-label", "Your verdict");
+      VERDICTS.forEach(function (v, k) {
+        var b = el("button", "verdict");
+        b.type = "button";
+        var top = el("b", null, v.label);
+        top.appendChild(el("kbd", null, String(k + 1)));
+        b.appendChild(top);
+        b.appendChild(el("span", null, v.hint));
+        if (d) {
+          b.disabled = true;
+          if (v.id === a.answer) b.classList.add("is-right");
+          if (v.id === d.pick) b.classList.add("is-pick");
+        } else {
+          b.addEventListener("click", function () { decide(v.id); });
+        }
+        vs.appendChild(b);
+      });
+      alertEl.appendChild(vs);
+
+      if (d) alertEl.appendChild(debrief(a, d));
+
+      shownAt = Date.now();
+      renderQueue();
+
+      if (focus) {
+        alertEl.focus({ preventScroll: true });
+        var r = alertEl.getBoundingClientRect();
+        if (r.top < 0 || r.top > window.innerHeight * 0.6) {
+          alertEl.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+        }
+      }
+    }
+
+    function decide(pick) {
+      var a = ALERTS[cur];
+      if (done[a.id]) return;
+      done[a.id] = { pick: pick, ok: pick === a.answer, ms: Date.now() - shownAt };
+      renderScore();
+      show(cur, false);
+      var next = $(".debrief .btn", alertEl);
+      if (next) next.focus({ preventScroll: true });
+    }
+
+    function advance() {
+      for (var k = 1; k <= ALERTS.length; k++) {
+        var j = (cur + k) % ALERTS.length;
+        if (!done[ALERTS[j].id]) return show(j, true);
+      }
+      summary();
+    }
+
+    function summary() {
+      var s = stats();
+      var best = 0;
+      try { best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch (e) {}
+      if (s.ok > best) {
+        best = s.ok;
+        try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {}
+      }
+
+      alertEl.textContent = "";
+      alertEl.removeAttribute("data-sev");
+
+      var box = el("div", "shift");
+      box.appendChild(el("p", "eyebrow", "Shift complete"));
+
+      var big = el("p", "shift__big", String(s.ok));
+      big.appendChild(el("i", null, " / " + ALERTS.length + " calls matched"));
+      box.appendChild(big);
+
+      var msg = s.ok === ALERTS.length
+        ? "Clean shift. Every call matched mine. If you're hiring, we should compare notes for real."
+        : s.ok >= ALERTS.length - 2
+          ? "Solid shift. Reopen the alerts we called differently; the analyst notes are where the learning is."
+          : "Rough night. Everyone has one. Each alert in the queue keeps its analyst notes, so step back through them.";
+      box.appendChild(el("p", null, msg));
+
+      var dl = el("dl", "evidence");
+      [
+        ["Average time to verdict", secs(s.avg)],
+        ["Escalations caught", ALERTS.filter(function (a) {
+          return a.answer === "escalate" && done[a.id] && done[a.id].ok;
+        }).length + " of " + ALERTS.filter(function (a) { return a.answer === "escalate"; }).length],
+        ["Best score on this device", best + " / " + ALERTS.length]
+      ].forEach(function (row) {
+        var r = el("div");
+        r.appendChild(el("dt", null, row[0]));
+        r.appendChild(el("dd", null, row[1]));
+        dl.appendChild(r);
+      });
+      box.appendChild(dl);
+
+      var row = el("div", "footer__btns");
+      var again = el("button", "btn");
+      again.type = "button";
+      again.textContent = "Run the shift again";
+      again.addEventListener("click", function () {
+        done = {};
+        renderScore();
+        show(0, true);
+      });
+      var talk = el("a", "btn btn--ghost", "Talk to the analyst");
+      talk.href = "#contact";
+      row.appendChild(again);
+      row.appendChild(talk);
+      box.appendChild(row);
+
+      alertEl.appendChild(box);
+      renderQueue();
+      $$(".queue__item", queueEl).forEach(function (b) { b.setAttribute("aria-current", "false"); });
+      alertEl.focus({ preventScroll: true });
+    }
+
+    // Number keys pick a verdict while focus is anywhere inside the lab.
+    if (labEl) {
+      labEl.addEventListener("keydown", function (e) {
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        var k = parseInt(e.key, 10);
+        if (k >= 1 && k <= VERDICTS.length && !done[ALERTS[cur].id] && $(".verdicts", alertEl)) {
+          e.preventDefault();
+          decide(VERDICTS[k - 1].id);
+        }
+      });
+    }
+
+    renderScore();
+    show(0, false);
+
+    // Start the clock when the alert is actually on screen, not at page load.
+    if ("IntersectionObserver" in window) {
+      var clockIO = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        if (!done[ALERTS[cur].id]) shownAt = Date.now();
+        clockIO.disconnect();
+      }, { threshold: 0.4 });
+      clockIO.observe(alertEl);
+    }
+  })();
+
+  /* ---------------------------------------------------- Analyst console */
+
+  (function console_() {
+    var dlg = $("#term");
+    var out = $("#termOut");
+    var form = $("#termForm");
+    var input = $("#termCmd");
+    var openBtn = $(".term-btn");
+
+    if (!dlg || !out || !form || !input || typeof dlg.showModal !== "function") {
+      if (openBtn) openBtn.hidden = true;
+      $$(".kb-only").forEach(function (n) { n.hidden = true; });
+      return;
+    }
+
+    var EMAIL = "favouropara48@gmail.com";
+    var SECTIONS = {
+      top: "top", home: "top",
+      about: "about", profile: "about",
+      soc: "soc", ops: "soc",
+      lab: "lab", triage: "lab",
+      risk: "risk", matrix: "risk",
+      skills: "capabilities", capabilities: "capabilities",
+      experience: "experience", career: "experience", exp: "experience",
+      work: "work", cases: "work",
+      contact: "contact"
+    };
+    var LINKS = {
+      linkedin: "https://www.linkedin.com/in/favour-opara-a2513018a",
+      github: "https://github.com/favourOpara",
+      x: "https://twitter.com/candlesticksand",
+      twitter: "https://twitter.com/candlesticksand"
+    };
+
+    var hist = [];
+    var hi = 0;
+    var greeted = false;
+
+    function line(text, cls) {
+      var p = document.createElement("p");
+      if (cls) p.className = cls;
+      p.textContent = text;
+      out.appendChild(p);
+      return p;
+    }
+
+    function lines(arr, cls) {
+      arr.forEach(function (t) { line(t, cls); });
+    }
+
+    function linkLine(label, href) {
+      var p = document.createElement("p");
+      var a = document.createElement("a");
+      a.href = href;
+      a.textContent = label;
+      if (/^https?:/.test(href)) { a.target = "_blank"; a.rel = "noopener"; }
+      p.appendChild(a);
+      out.appendChild(p);
+    }
+
+    function go(id) {
+      var t = document.getElementById(id);
+      close();
+      if (t) {
+        requestAnimationFrame(function () {
+          t.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+          if (history.replaceState) history.replaceState(null, "", "#" + id);
+        });
+      }
+    }
+
+    function copy(text, ok) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { line(ok, "ok"); },
+          function () { line("Clipboard blocked by the browser. It's " + text + ".", "warn"); });
+      } else {
+        line("Clipboard unavailable. It's " + text + ".", "warn");
+      }
+    }
+
+    var CMDS = {
+      help: {
+        d: "list commands",
+        run: function () {
+          Object.keys(CMDS).forEach(function (k) {
+            if (CMDS[k].d) line(("  " + k + "            ").slice(0, 14) + CMDS[k].d);
+          });
+          line("Tab completes, arrow keys walk history, Esc closes.", "dim");
+        }
+      },
+      whoami: {
+        d: "the short version",
+        run: function () {
+          line("Favour Sobechi Opara", "hi");
+          lines([
+            "SOC analyst, cybersecurity and IT risk.",
+            "MSc Cybersecurity, University of Sunderland.",
+            "Based in Sunderland, UK. Open to SOC roles, 24/7 shifts and relocation."
+          ]);
+        }
+      },
+      experience: {
+        d: "career timeline",
+        run: function () {
+          line("Sep 2025 - now   CCTV Security Officer, Tesco, Sunderland", "hi");
+          line("                 Real-time monitoring, escalation, evidence packages.");
+          line("Aug 2022 - 2024  Cybersecurity & IT Risk Analyst, Fidelity Bank Plc", "hi");
+          lines([
+            "                 43% lower mean time to respond",
+            "                 35% more efficient incident response",
+            "                 25% fewer repeat incidents",
+            "                 Zero ISO 27001 / PCI DSS audit findings"
+          ]);
+        }
+      },
+      education: {
+        d: "degrees",
+        run: function () {
+          lines([
+            "2024 - 2025  MSc Cybersecurity, University of Sunderland",
+            "2014 - 2019  BEng Mechanical Engineering, Landmark University"
+          ]);
+        }
+      },
+      certs: {
+        d: "certifications",
+        run: function () {
+          lines([
+            "[ok] CompTIA Security+",
+            "[ok] CompTIA Network+",
+            "[ok] CompTIA A+",
+            "[ok] TryHackMe SAL1",
+            "[ok] ISC2 Certified in Cybersecurity",
+            "[ok] ISO 27001 Lead Implementer"
+          ], "ok");
+        }
+      },
+      skills: {
+        d: "tooling by area",
+        run: function () {
+          line("detection & response", "hi");
+          line("  Sentinel, Defender for Endpoint / XDR, CrowdStrike Falcon, QRadar, Rapid7, KQL");
+          line("risk & compliance", "hi");
+          line("  Risk management, technical reporting, ISO 27001, PCI DSS, NIST CSF, GDPR");
+          line("controls & platforms", "hi");
+          line("  IBM Guardium (DAM), Thycotic / BeyondTrust (PAM), Tripwire (FIM), vSphere, GPO, SCCM");
+        }
+      },
+      contact: {
+        d: "how to reach me",
+        run: function () {
+          linkLine("email     " + EMAIL, "mailto:" + EMAIL);
+          linkLine("phone     +44 7392 982752", "tel:+447392982752");
+          linkLine("linkedin  favour-opara", LINKS.linkedin);
+          linkLine("github    favourOpara", LINKS.github);
+        }
+      },
+      email: {
+        d: "copy my email address",
+        run: function () { copy(EMAIL, "Copied " + EMAIL + " to the clipboard."); }
+      },
+      cv: {
+        d: "save this CV as a PDF",
+        run: function () {
+          close();
+          setTimeout(function () { window.print(); }, 120);
+        }
+      },
+      ls: {
+        d: "list sections",
+        run: function () {
+          line("about  soc  lab  risk  skills  experience  work  contact");
+        }
+      },
+      goto: {
+        d: "jump to a section, e.g. goto risk",
+        run: function (args) {
+          var id = SECTIONS[(args[0] || "").toLowerCase()];
+          if (!id) return line("goto: no such section. Try ls.", "err");
+          go(id);
+        }
+      },
+      triage: {
+        d: "work the alert queue",
+        run: function () { go("lab"); }
+      },
+      open: {
+        d: "open linkedin | github | x",
+        run: function (args) {
+          var href = LINKS[(args[0] || "").toLowerCase()];
+          if (!href) return line("open: try linkedin, github or x.", "err");
+          window.open(href, "_blank", "noopener");
+          line("Opened " + href, "ok");
+        }
+      },
+      theme: {
+        d: "theme light | dark",
+        run: function (args) {
+          var now = root.getAttribute("data-theme");
+          var want = args[0] === "light" || args[0] === "dark" ? args[0] : (now === "light" ? "dark" : "light");
+          if (want !== now && themeBtn) themeBtn.click();
+          line("Theme set to " + want + ".", "ok");
+        }
+      },
+      history: {
+        d: "previous commands",
+        run: function () {
+          hist.forEach(function (h, i) { line(("   " + (i + 1)).slice(-4) + "  " + h); });
+        }
+      },
+      date: {
+        run: function () { line(new Date().toString()); }
+      },
+      echo: {
+        run: function (args) { line(args.join(" ")); }
+      },
+      sudo: {
+        run: function () {
+          line("visitor is not in the sudoers file. This incident will be reported.", "err");
+          line("(It has been. To me. Hello.)", "dim");
+        }
+      },
+      rm: {
+        run: function () { line("rm: permission denied. Also, there's no change record for that.", "err"); }
+      },
+      hire: {
+        run: function () {
+          line("Excellent judgement. Opening a ticket...", "ok");
+          CMDS.contact.run([]);
+        }
+      },
+      clear: {
+        d: "clear the screen",
+        run: function () { out.textContent = ""; }
+      },
+      exit: {
+        d: "close the console",
+        run: function () { close(); }
+      }
+    };
+
+    var ALIAS = { "?": "help", about: "whoami", exp: "experience", edu: "education", cd: "goto",
+      quit: "exit", q: "exit", cls: "clear", man: "help", resume: "cv", pdf: "cv" };
+
+    function exec(raw) {
+      var text = raw.trim();
+      if (!text) return;
+      line(text, "cmd");
+      hist.push(text);
+      hi = hist.length;
+
+      var parts = text.split(/\s+/);
+      var name = parts[0].toLowerCase();
+      if (name === "hire" && parts[1] === "me") parts = ["hire"];
+      name = ALIAS[name] || name;
+
+      var cmd = CMDS[name];
+      if (!cmd) {
+        line(parts[0] + ": command not found. Type help.", "err");
+      } else {
+        cmd.run(parts.slice(1));
+      }
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function complete() {
+      var v = input.value;
+      var parts = v.split(/\s+/);
+      var pool = parts.length > 1 && /^(goto|cd)$/i.test(parts[0])
+        ? Object.keys(SECTIONS)
+        : parts.length > 1 && /^open$/i.test(parts[0])
+          ? Object.keys(LINKS)
+          : Object.keys(CMDS);
+      var stem = parts[parts.length - 1].toLowerCase();
+      var hits = pool.filter(function (k) { return k.indexOf(stem) === 0; });
+      if (hits.length === 1) {
+        parts[parts.length - 1] = hits[0];
+        input.value = parts.join(" ") + (parts.length === 1 ? " " : "");
+      } else if (hits.length > 1) {
+        line(hits.join("  "), "dim");
+        out.scrollTop = out.scrollHeight;
+      }
+    }
+
+    function open() {
+      if (dlg.open) return;
+      dlg.showModal();
+      if (!greeted) {
+        greeted = true;
+        line("Favour Opara / analyst console", "hi");
+        line("Type help to see what's here, or whoami for the short version.", "dim");
+      }
+      input.focus();
+    }
+
+    function close() {
+      if (dlg.open) dlg.close();
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = input.value;
+      input.value = "";
+      exec(v);
+    });
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        complete();
+      } else if (e.key === "ArrowUp") {
+        if (!hist.length) return;
+        e.preventDefault();
+        hi = Math.max(0, hi - 1);
+        input.value = hist[hi];
+      } else if (e.key === "ArrowDown") {
+        if (!hist.length) return;
+        e.preventDefault();
+        hi = Math.min(hist.length, hi + 1);
+        input.value = hist[hi] || "";
+      } else if (e.key === "l" && e.ctrlKey) {
+        e.preventDefault();
+        out.textContent = "";
+      }
+    });
+
+    // A click on the backdrop lands on the dialog element itself.
+    dlg.addEventListener("click", function (e) {
+      if (e.target === dlg) close();
+    });
+
+    var x = $(".term__x", dlg);
+    if (x) x.addEventListener("click", close);
+
+    if (openBtn) openBtn.addEventListener("click", open);
+
+    document.addEventListener("keydown", function (e) {
+      if (dlg.open) return;
+      var t = e.target;
+      var typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+      if (typing) return;
+      if ((e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) ||
+          ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) {
+        e.preventDefault();
+        open();
+      }
+    });
+  })();
+
+  /* ----------------------------------------------------- Save CV as PDF */
+
+  $$("[data-print]").forEach(function (b) {
+    b.addEventListener("click", function () { window.print(); });
+  });
+
   /* ---------------------------------------------------------- Copy buttons */
 
   $$("[data-copy]").forEach(function (btn) {

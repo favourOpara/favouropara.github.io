@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08090c">
+  <meta name="robots" content="noindex">
+  <title>404 | Favour Sobechi Opara</title>
+
+  <link rel="icon" href="/assets/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/assets/css/site.css">
+
+  <script>
+    try {
+      var t = localStorage.getItem("fo-theme");
+      if (t) document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  </script>
+
+  <style>
+    .nf {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: var(--gutter);
+    }
+
+    .nf__card {
+      width: min(640px, 100%);
+      display: grid;
+      gap: 1.4rem;
+    }
+
+    .nf h1 {
+      font-size: var(--step-5);
+    }
+
+    .nf h1 span {
+      background: linear-gradient(96deg, var(--accent-hi), var(--accent-2) 70%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .nf p {
+      color: var(--ink-2);
+      font-size: var(--step-1);
+    }
+
+    .nf .code pre {
+      font-size: 0.75rem;
+    }
+
+    .nf__cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="nf">
+    <div class="nf__card">
+      <span class="eyebrow">Error 404 / Indicator not found</span>
+      <h1>Nothing <span>here.</span></h1>
+      <p>
+        I searched every log source I have and this page isn't in any of them. It may have moved, or the link may
+        have a typo in it.
+      </p>
+
+      <figure class="code">
+        <figcaption class="code__bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          incident_note.txt
+        </figcaption>
+        <pre><code><span class="c">// Status:</span> closed, benign
+<span class="c">// Cause:</span>  requested page does not exist
+<span class="c">// Action:</span> return visitor to <span class="s">favouropara.github.io</span></code></pre>
+      </figure>
+
+      <div class="nf__cta">
+        <a class="btn" href="/">
+          Back to the portfolio
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
+        <a class="btn btn--ghost" href="/#lab">Try the triage lab</a>
+      </div>
+    </div>
+  </main>
+</body>
+
+</html>

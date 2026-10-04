@@ -99,6 +99,7 @@
       <nav class="nav__links" aria-label="Sections">
         <a href="#about">About</a>
         <a href="#soc">Security ops</a>
+        <a href="#lab">Triage lab</a>
         <a href="#risk">Risk model</a>
         <a href="#capabilities">Skills</a>
         <a href="#experience">Experience</a>
@@ -107,6 +108,15 @@
       </nav>
 
       <div class="nav__tools">
+        <button class="icon-btn term-btn" type="button" aria-label="Open the analyst console" aria-haspopup="dialog"
+          title="Analyst console ( / )">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+            stroke-linejoin="round" aria-hidden="true">
+            <rect x="2.5" y="4" width="19" height="16" rx="2.5" />
+            <path d="M7 9.5l3 2.5-3 2.5M12.5 15H17" />
+          </svg>
+        </button>
+
         <button class="icon-btn theme-btn" type="button" aria-label="Switch to light theme">
           <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
             stroke-linecap="round" aria-hidden="true">
@@ -146,11 +156,12 @@
   <div class="sheet" id="sheet">
     <a href="#about"><i>01</i> About</a>
     <a href="#soc"><i>02</i> Security operations</a>
-    <a href="#risk"><i>03</i> Risk model</a>
-    <a href="#capabilities"><i>04</i> Skills</a>
-    <a href="#experience"><i>05</i> Experience</a>
-    <a href="#work"><i>06</i> Work</a>
-    <a href="#contact"><i>07</i> Contact</a>
+    <a href="#lab"><i>03</i> Triage lab</a>
+    <a href="#risk"><i>04</i> Risk model</a>
+    <a href="#capabilities"><i>05</i> Skills</a>
+    <a href="#experience"><i>06</i> Experience</a>
+    <a href="#work"><i>07</i> Work</a>
+    <a href="#contact"><i>08</i> Contact</a>
   </div>
 
   <!-- Section rail ------------------------------------------------------- -->
@@ -158,6 +169,7 @@
     <button type="button" data-to="top"><span>Top</span></button>
     <button type="button" data-to="about"><span>About</span></button>
     <button type="button" data-to="soc"><span>SOC</span></button>
+    <button type="button" data-to="lab"><span>Lab</span></button>
     <button type="button" data-to="risk"><span>Risk</span></button>
     <button type="button" data-to="capabilities"><span>Skills</span></button>
     <button type="button" data-to="experience"><span>Career</span></button>
@@ -210,6 +222,11 @@
             </a>
             <a class="btn btn--ghost" href="#work">Review my case files</a>
           </div>
+
+          <p class="hero__hint">
+            <a href="#lab">Try the triage lab</a><span class="kb-only">, or press <kbd>/</kbd> for the analyst
+              console</span>.
+          </p>
 
           <dl class="metrics">
             <div class="metric">
@@ -487,11 +504,44 @@ SigninLogs
       </div>
     </section>
 
-    <!-- ========================================================= Risk matrix -->
-    <section class="section section--hair" id="risk" data-section>
+    <!-- ========================================================= Triage lab -->
+    <section class="section section--hair" id="lab" data-section>
       <div class="shell">
         <div class="sec-head sec-head--wide" data-reveal>
-          <span class="eyebrow">03 / Risk model</span>
+          <span class="eyebrow">03 / Triage lab</span>
+          <h2>Your shift. Six alerts in the queue.</h2>
+          <p>
+            Don't take my word for how triage works. Work the queue yourself: read the evidence, make the call, then
+            compare it with mine. Every alert is synthetic and written for this page, but each one is modelled on a
+            pattern that lands in real SOC queues.
+          </p>
+        </div>
+
+        <div class="lab" data-reveal>
+          <div class="lab__bar">
+            <b>soc_queue</b> <span class="lab__shift">shift 01</span>
+            <span class="lab__score" id="labScore" aria-live="polite">0 / 0 correct</span>
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+
+          <div class="lab__body">
+            <ol class="queue" id="labQueue" aria-label="Alert queue"></ol>
+
+            <div class="alert" id="labAlert" tabindex="-1">
+              <noscript>
+                <p class="lab__nojs">The triage lab needs JavaScript. Everything else on this page works without it.</p>
+              </noscript>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= Risk matrix -->
+    <section class="section section--hair section--tint" id="risk" data-section>
+      <div class="shell">
+        <div class="sec-head sec-head--wide" data-reveal>
+          <span class="eyebrow">04 / Risk model</span>
           <h2>Every engagement lands somewhere on this grid.</h2>
           <p>
             Detection tells you what happened. Risk work tells you what it costs and who owns it. This is the 5 by 5
@@ -649,10 +699,10 @@ SigninLogs
     </section>
 
     <!-- ============================================================== Skills -->
-    <section class="section section--hair section--tint" id="capabilities" data-section>
+    <section class="section section--hair" id="capabilities" data-section>
       <div class="shell">
         <div class="sec-head sec-head--wide" data-reveal>
-          <span class="eyebrow">04 / Skills</span>
+          <span class="eyebrow">05 / Skills</span>
           <h2>The toolset, honestly rated.</h2>
           <p>
             Skills built through work rather than certificates alone. Levels reflect current working depth and move
@@ -810,10 +860,10 @@ SigninLogs
     </section>
 
     <!-- ========================================================== Experience -->
-    <section class="section section--hair" id="experience" data-section>
+    <section class="section section--hair section--tint" id="experience" data-section>
       <div class="shell">
         <div class="sec-head" data-reveal>
-          <span class="eyebrow">05 / Track record</span>
+          <span class="eyebrow">06 / Track record</span>
           <h2>Where the numbers came from.</h2>
         </div>
 
@@ -951,10 +1001,10 @@ SigninLogs
     </section>
 
     <!-- =========================================================== Case files -->
-    <section class="section section--hair section--tint" id="work" data-section>
+    <section class="section section--hair" id="work" data-section>
       <div class="shell">
         <div class="sec-head sec-head--wide" data-reveal>
-          <span class="eyebrow">06 / Case files</span>
+          <span class="eyebrow">07 / Case files</span>
           <h2>Real assessments, open for review.</h2>
           <p>
             Each case file links to the full report in Google Drive. Evidence, server names and stakeholder details
@@ -1220,12 +1270,21 @@ SigninLogs
     </section>
 
     <!-- ============================================================= Contact -->
-    <section class="section section--hair" id="contact" data-section>
+    <section class="section section--hair section--tint" id="contact" data-section>
       <div class="shell">
         <div class="sec-head" data-reveal>
-          <span class="eyebrow">07 / Contact</span>
+          <span class="eyebrow">08 / Contact</span>
           <h2>Let's talk.</h2>
           <p>Email or phone, whichever is easiest. I reply to everything.</p>
+          <div>
+            <button class="btn btn--ghost" type="button" data-print>
+              Save this CV as PDF
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="contact">
@@ -1351,13 +1410,16 @@ SigninLogs
           Looking for someone who can hold a monitoring queue, investigate properly, document it cleanly and still
           understand the risk behind the alert? That's the job I do.
         </p>
-        <a class="btn" href="mailto:favouropara48@gmail.com">
-          favouropara48@gmail.com
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round" aria-hidden="true">
-            <path d="M7 17L17 7M9 7h8v8" />
-          </svg>
-        </a>
+        <div class="footer__btns">
+          <a class="btn" href="mailto:favouropara48@gmail.com">
+            favouropara48@gmail.com
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 17L17 7M9 7h8v8" />
+            </svg>
+          </a>
+          <button class="btn btn--ghost" type="button" data-print>Save CV as PDF</button>
+        </div>
       </div>
 
       <div class="footer__grid">
@@ -1371,6 +1433,7 @@ SigninLogs
         <nav class="footer__nav" aria-label="Footer">
           <a href="#about">About</a>
           <a href="#soc">Security ops</a>
+          <a href="#lab">Triage lab</a>
           <a href="#risk">Risk model</a>
           <a href="#capabilities">Skills</a>
           <a href="#experience">Experience</a>
@@ -1422,6 +1485,22 @@ SigninLogs
       <path d="M12 19V5M6 11l6-6 6 6" />
     </svg>
   </button>
+
+  <!-- Analyst console -------------------------------------------------- -->
+  <dialog class="term" id="term" aria-labelledby="termTitle">
+    <div class="term__bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <b id="termTitle">analyst@favouropara: ~</b>
+      <button class="term__x" type="button" aria-label="Close console">esc</button>
+    </div>
+    <div class="term__out" id="termOut" aria-live="polite"></div>
+    <form class="term__in" id="termForm" autocomplete="off">
+      <label class="vh" for="termCmd">Command</label>
+      <span class="term__ps" aria-hidden="true">$</span>
+      <input id="termCmd" type="text" spellcheck="false" autocapitalize="off" autocorrect="off"
+        placeholder="type help and press enter">
+    </form>
+  </dialog>
 
   <script src="assets/js/site.js" defer></script>
 </body>
