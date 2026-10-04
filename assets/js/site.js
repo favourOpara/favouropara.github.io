@@ -226,9 +226,15 @@
 
     function palette() {
       return root.getAttribute("data-theme") === "light"
-        ? { node: "91, 61, 245", link: "91, 61, 245" }
-        : { node: "150, 170, 255", link: "124, 92, 255" };
+        ? { node: "91, 61, 245", link: "91, 61, 245", packet: "14, 139, 168", threat: "220, 38, 38", ok: "5, 150, 105" }
+        : { node: "150, 170, 255", link: "124, 92, 255", packet: "34, 211, 238", threat: "239, 68, 68", ok: "16, 185, 129" };
     }
+
+    // Packets ride the links; every few seconds one node lights up as a
+    // detection, gets triaged, and is contained.
+    var packets = [];
+    var threat = null;
+    var nextThreat = performance.now() + 3200;
 
     var colors = palette();
 
@@ -254,7 +260,8 @@
       }
     }
 
-    function draw() {
+    function draw(ts) {
+      ts = ts || performance.now();
       ctx.clearRect(0, 0, w, h);
 
       var LINK = 132;
@@ -300,12 +307,98 @@
           ctx.moveTo(n.x, n.y);
           ctx.lineTo(m.x, m.y);
           ctx.stroke();
+
+          if (d < LINK * 0.75 && packets.length < 26 && Math.random() < 0.0012) {
+            packets.push({ a: n, b: m, t: 0, s: 0.006 + Math.random() * 0.012 });
+          }
         }
 
         ctx.fillStyle = "rgba(" + colors.node + ", 0.65)";
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Packets in flight. Drop any whose link has stretched apart.
+      for (var k = packets.length - 1; k >= 0; k--) {
+        var pk = packets[k];
+        pk.t += pk.s;
+        var ax = pk.b.x - pk.a.x, ay = pk.b.y - pk.a.y;
+        if (pk.t >= 1 || ax * ax + ay * ay > LINK * LINK) {
+          packets.splice(k, 1);
+          continue;
+        }
+        var px = pk.a.x + ax * pk.t, py = pk.a.y + ay * pk.t;
+        var g = ctx.createRadialGradient(px, py, 0, px, py, 6);
+        g.addColorStop(0, "rgba(" + colors.packet + ", 0.9)");
+        g.addColorStop(1, "rgba(" + colors.packet + ", 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(px, py, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Detection, then containment.
+      if (!threat && ts > nextThreat && nodes.length) {
+        // On wide screens keep the event clear of the headline copy.
+        var pool = w > 900 ? nodes.filter(function (q) {
+          return q.x > w * 0.56 && q.x < w * 0.86 && q.y > h * 0.16 && q.y < h * 0.62;
+        }) : nodes;
+        if (!pool.length) pool = nodes;
+        threat = { n: pool[Math.floor(Math.random() * pool.length)], t0: ts };
+      }
+      if (threat) {
+        var age = (ts - threat.t0) / 1000;
+        var tn = threat.n;
+        if (age < 1.8) {
+          var halo = ctx.createRadialGradient(tn.x, tn.y, 0, tn.x, tn.y, 46);
+          halo.addColorStop(0, "rgba(" + colors.threat + ", 0.35)");
+          halo.addColorStop(1, "rgba(" + colors.threat + ", 0)");
+          ctx.fillStyle = halo;
+          ctx.beginPath();
+          ctx.arc(tn.x, tn.y, 46, 0, Math.PI * 2);
+          ctx.fill();
+          for (var ring = 0; ring < 3; ring++) {
+            var ph = ((age + ring * 0.3) % 0.9) / 0.9;
+            ctx.strokeStyle = "rgba(" + colors.threat + "," + (1 - ph) + ")";
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(tn.x, tn.y, 5 + ph * 52, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "rgba(" + colors.threat + ", 1)";
+          ctx.beginPath();
+          ctx.arc(tn.x, tn.y, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.font = "500 12px 'IBM Plex Mono', monospace";
+          ctx.fillText((age * 4 | 0) % 2 ? "ALERT" : "ALERT_", tn.x + 14, tn.y - 12);
+        } else if (age < 3) {
+          var q = (age - 1.8) / 1.2;
+          var e2 = 1 - Math.pow(1 - q, 3);
+          ctx.strokeStyle = "rgba(" + colors.ok + "," + (1 - q * 0.5) + ")";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(tn.x, tn.y, 44 - e2 * 32, 0, Math.PI * 2);
+          ctx.stroke();
+          // Lock brackets close in around the node.
+          var br = 22 - e2 * 10;
+          ctx.beginPath();
+          [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (c) {
+            ctx.moveTo(tn.x + c[0] * br, tn.y + c[1] * (br - 6));
+            ctx.lineTo(tn.x + c[0] * br, tn.y + c[1] * br);
+            ctx.lineTo(tn.x + c[0] * (br - 6), tn.y + c[1] * br);
+          });
+          ctx.stroke();
+          ctx.fillStyle = "rgba(" + colors.ok + "," + (1 - q * 0.4) + ")";
+          ctx.beginPath();
+          ctx.arc(tn.x, tn.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.font = "500 12px 'IBM Plex Mono', monospace";
+          ctx.fillText("CONTAINED", tn.x + 16, tn.y - 14);
+        } else {
+          threat = null;
+          nextThreat = ts + 3500 + Math.random() * 4000;
+        }
       }
 
       if (running) raf = requestAnimationFrame(draw);
@@ -820,7 +913,7 @@
       queueEl.textContent = "";
       ALERTS.forEach(function (a, i) {
         var li = el("li");
-        var b = el("button", "queue__item");
+        var b = el("button", "queue__item" + (done[a.id] ? "" : " is-new"));
         b.type = "button";
         b.setAttribute("data-sev", a.sev);
         b.setAttribute("aria-current", String(i === cur));
@@ -861,8 +954,9 @@
       return wrap;
     }
 
-    function debrief(a, d) {
-      var box = el("div", "debrief " + (d.ok ? "is-ok" : "is-miss"));
+    function debrief(a, d, fresh) {
+      var box = el("div", "debrief " + (d.ok ? "is-ok" : "is-miss") + (fresh ? " is-fresh" : ""));
+      box.appendChild(el("span", "stamp", d.ok ? "Match" : "Differs")).setAttribute("aria-hidden", "true");
       var res = el("p", "debrief__res");
       res.appendChild(el("b", null, d.ok ? "Same call as mine" : "I'd call it " + verdictLabel(a.answer)));
       res.appendChild(el("span", null, "You: " + verdictLabel(d.pick)));
@@ -880,13 +974,14 @@
       return box;
     }
 
-    function show(i, focus) {
+    function show(i, focus, fresh) {
       cur = i;
       var a = ALERTS[i];
       var d = done[a.id];
 
       alertEl.textContent = "";
       alertEl.setAttribute("data-sev", a.sev);
+      alertEl.classList.toggle("is-nav", !fresh);
 
       var head = el("div", "alert__head");
       head.appendChild(el("span", "sev-badge", a.sev));
@@ -926,7 +1021,8 @@
       });
       alertEl.appendChild(vs);
 
-      if (d) alertEl.appendChild(debrief(a, d));
+      if (d) alertEl.appendChild(debrief(a, d, fresh));
+      if (fresh && d && !d.ok) vs.classList.add("is-shake");
 
       shownAt = Date.now();
       renderQueue();
@@ -945,7 +1041,7 @@
       if (done[a.id]) return;
       done[a.id] = { pick: pick, ok: pick === a.answer, ms: Date.now() - shownAt };
       renderScore();
-      show(cur, false);
+      show(cur, false, true);
       var next = $(".debrief .btn", alertEl);
       if (next) next.focus({ preventScroll: true });
     }
@@ -973,8 +1069,12 @@
       var box = el("div", "shift");
       box.appendChild(el("p", "eyebrow", "Shift complete"));
 
-      var big = el("p", "shift__big", String(s.ok));
+      var big = el("p", "shift__big");
+      var n = el("span", null, "0");
+      n.setAttribute("data-count", String(s.ok));
+      big.appendChild(n);
       big.appendChild(el("i", null, " / " + ALERTS.length + " calls matched"));
+      countUp(n);
       box.appendChild(big);
 
       var msg = s.ok === ALERTS.length
@@ -1150,14 +1250,14 @@
       experience: {
         d: "career timeline",
         run: function () {
-          line("Sep 2025 - now   CCTV Security Officer, Tesco, Sunderland", "hi");
-          line("                 Real-time monitoring, escalation, evidence packages.");
-          line("Aug 2022 - 2024  Cybersecurity & IT Risk Analyst, Fidelity Bank Plc", "hi");
+          line("Sep 2025 to now   CCTV Security Officer, Tesco, Sunderland", "hi");
+          line("                  Real-time monitoring, escalation, evidence packages.");
+          line("Aug 2022 to 2024  Cybersecurity & IT Risk Analyst, Fidelity Bank Plc", "hi");
           lines([
-            "                 43% lower mean time to respond",
-            "                 35% more efficient incident response",
-            "                 25% fewer repeat incidents",
-            "                 Zero ISO 27001 / PCI DSS audit findings"
+            "                  43% lower mean time to respond",
+            "                  35% more efficient incident response",
+            "                  25% fewer repeat incidents",
+            "                  Zero ISO 27001 / PCI DSS audit findings"
           ]);
         }
       },
@@ -1165,8 +1265,8 @@
         d: "degrees",
         run: function () {
           lines([
-            "2024 - 2025  MSc Cybersecurity, University of Sunderland",
-            "2014 - 2019  BEng Mechanical Engineering, Landmark University"
+            "2024 to 2025  MSc Cybersecurity, University of Sunderland",
+            "2014 to 2019  BEng Mechanical Engineering, Landmark University"
           ]);
         }
       },

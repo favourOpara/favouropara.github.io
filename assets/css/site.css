@@ -284,12 +284,20 @@ ol {
   color: var(--accent-2);
 }
 
+/* A live status light, not a rule. */
 .eyebrow::before {
   content: "";
-  width: 26px;
-  height: 1px;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: currentColor;
-  opacity: 0.6;
+  animation: ping 2.4s var(--ease) infinite;
+}
+
+@keyframes ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 8px transparent; }
 }
 
 .sec-head h2 {
@@ -2938,6 +2946,520 @@ kbd {
 }
 
 /* --------------------------------------------------------------------------
+   16b. Motion layer
+   Only the .motion states hide anything, and motion.js sets that class
+   solely when reduced motion is not requested.
+   -------------------------------------------------------------------------- */
+
+/* Headline word cascade ------------------------------------------------- */
+
+.motion .split .w {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.1em;
+  margin-bottom: -0.1em;
+}
+
+.motion .split .w > span {
+  display: inline-block;
+  transform: translateY(108%) rotate(5deg);
+  transform-origin: left bottom;
+  filter: blur(8px);
+  opacity: 0;
+  transition: transform 0.95s var(--ease), filter 0.95s var(--ease), opacity 0.6s;
+  transition-delay: calc(var(--i, 0) * 60ms + 120ms);
+}
+
+.motion .split.is-in .w > span {
+  transform: none;
+  filter: none;
+  opacity: 1;
+}
+
+/* Hero: glitch, scan line, parallax ------------------------------------ */
+
+.hero__title .grad {
+  position: relative;
+}
+
+.hero__title .grad::before,
+.hero__title .grad::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hero__title .grad::before {
+  color: var(--heat-5);
+  animation: glitch-a 7s steps(1, end) 3.6s infinite;
+}
+
+.hero__title .grad::after {
+  color: var(--accent-2);
+  animation: glitch-b 7s steps(1, end) 3.6s infinite;
+}
+
+@keyframes glitch-a {
+  0%, 90% { opacity: 0; transform: none; clip-path: inset(0 0 100% 0); }
+  91% { opacity: 0.9; transform: translate(-5px, 1px); clip-path: inset(10% 0 62% 0); }
+  92.5% { opacity: 0.9; transform: translate(4px, -2px); clip-path: inset(64% 0 6% 0); }
+  94% { opacity: 0.9; transform: translate(-3px, 0); clip-path: inset(38% 0 40% 0); }
+  95.5% { opacity: 0; }
+}
+
+@keyframes glitch-b {
+  0%, 90.5% { opacity: 0; transform: none; clip-path: inset(0 0 100% 0); }
+  91.5% { opacity: 0.9; transform: translate(5px, -1px); clip-path: inset(55% 0 20% 0); }
+  93% { opacity: 0.9; transform: translate(-4px, 2px); clip-path: inset(5% 0 75% 0); }
+  94.5% { opacity: 0.9; transform: translate(2px, 0); clip-path: inset(80% 0 2% 0); }
+  96% { opacity: 0; }
+}
+
+.hero__grid {
+  transform: translate(var(--hx, 0), var(--hy, 0));
+  transition: transform 0.8s var(--ease);
+}
+
+.hero__grid::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 160px;
+  background: linear-gradient(180deg, transparent,
+    color-mix(in srgb, var(--accent-2) 18%, transparent) 70%,
+    color-mix(in srgb, var(--accent-2) 55%, transparent) 99%, transparent);
+  opacity: 0.55;
+  animation: scan 8s linear infinite;
+}
+
+@keyframes scan {
+  from { transform: translateY(-170px); }
+  to { transform: translateY(105vh); }
+}
+
+/* Light sweeps across the metric strip once the numbers have landed. */
+.motion .metrics {
+  position: relative;
+}
+
+.motion .metrics::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%,
+    color-mix(in srgb, var(--accent-2) 16%, transparent) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: sweep 1.6s var(--ease-io) 3.6s both;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  to { transform: translateX(100%); }
+}
+
+/* Triage flow: a packet walks the pipeline ---------------------------- */
+
+.flow__step h3 {
+  transition: color 0.4s;
+}
+
+.flow__step::after {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 40px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 12px 2px var(--accent-2);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flow__step.is-live .flow__n {
+  border-color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 16%, var(--surface));
+  color: var(--ink);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 16%, transparent),
+    0 0 26px -4px var(--accent-2);
+}
+
+.flow__step.is-live h3 {
+  color: var(--accent-2);
+}
+
+.flow__step.is-live:not(:last-child)::after {
+  animation: travel 1.5s var(--ease-io) forwards;
+}
+
+@keyframes travel {
+  0% { opacity: 0; top: 40px; }
+  15%, 85% { opacity: 1; }
+  100% { opacity: 0; top: 100%; }
+}
+
+/* KQL hunt types itself out ------------------------------------------- */
+
+.motion .code .cl {
+  opacity: 0;
+}
+
+.motion .code.is-typing .cl {
+  animation: line-in 0.5s var(--ease) both;
+  animation-delay: calc(var(--i) * 110ms);
+}
+
+@keyframes line-in {
+  0% { opacity: 0; background: color-mix(in srgb, var(--accent-2) 30%, transparent); }
+  40% { opacity: 1; }
+  100% { opacity: 1; background: transparent; }
+}
+
+.motion .code.is-typing .cl:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 1.05em;
+  margin-left: 3px;
+  vertical-align: -0.18em;
+  background: var(--accent-2);
+  animation: blink 1.05s steps(2, start) infinite;
+}
+
+/* Risk matrix: heat rises across the grid ------------------------------ */
+
+.motion .matrix .cell {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.5s var(--ease), transform 0.7s var(--ease),
+    background-color 0.3s var(--ease), border-color 0.3s;
+}
+
+.motion .matrix-panel.is-in .cell {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--w, 0) * 65ms + 150ms);
+}
+
+.motion .pin {
+  animation-delay: calc(900ms + var(--d, 0) * 80ms);
+}
+
+.motion .matrix-panel:not(.is-in) .pin {
+  animation-play-state: paused;
+}
+
+.pin.is-on {
+  animation: pin-pulse 1.8s var(--ease) infinite;
+}
+
+@keyframes pin-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cell) 70%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 9px transparent; }
+}
+
+/* Triage lab ------------------------------------------------------------ */
+
+.motion .lab .queue__item {
+  opacity: 0;
+  transform: translateX(-14px);
+  transition: opacity 0.45s, transform 0.6s var(--ease), background-color 0.2s;
+}
+
+.motion .lab.is-live .queue__item {
+  opacity: 1;
+  transform: none;
+}
+
+.motion .lab.is-live .queue li:nth-child(2) .queue__item { transition-delay: 70ms, 70ms, 0s; }
+.motion .lab.is-live .queue li:nth-child(3) .queue__item { transition-delay: 140ms, 140ms, 0s; }
+.motion .lab.is-live .queue li:nth-child(4) .queue__item { transition-delay: 210ms, 210ms, 0s; }
+.motion .lab.is-live .queue li:nth-child(5) .queue__item { transition-delay: 280ms, 280ms, 0s; }
+.motion .lab.is-live .queue li:nth-child(6) .queue__item { transition-delay: 350ms, 350ms, 0s; }
+
+.queue__item.is-new[data-sev="critical"] .queue__sev,
+.queue__item.is-new[data-sev="high"] .queue__sev {
+  animation: sev-ping 1.6s var(--ease) infinite;
+}
+
+@keyframes sev-ping {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--sev) 70%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.motion .alert.is-nav > * {
+  animation: fade-up 0.5s var(--ease) both;
+}
+
+.motion .alert.is-nav > :nth-child(2) { animation-delay: 50ms; }
+.motion .alert.is-nav > :nth-child(3) { animation-delay: 100ms; }
+.motion .alert.is-nav > :nth-child(4) { animation-delay: 160ms; }
+.motion .alert.is-nav > :nth-child(5) { animation-delay: 220ms; }
+
+.motion .evidence div {
+  transition: background-color 0.2s;
+}
+
+.motion .evidence div:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+}
+
+.debrief {
+  position: relative;
+}
+
+.debrief__res {
+  padding-right: 6.5rem;
+}
+
+.stamp {
+  position: absolute;
+  top: 0.95rem;
+  right: 1rem;
+  padding: 0.25rem 0.65rem;
+  border: 2px solid var(--res);
+  border-radius: 6px;
+  color: var(--res);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+}
+
+.debrief.is-fresh .stamp {
+  animation: stamp 0.55s cubic-bezier(0.2, 1.5, 0.4, 1) 0.12s both;
+}
+
+.debrief.is-fresh {
+  animation: fade-up 0.45s var(--ease) both, flare 1.4s var(--ease) both;
+}
+
+@keyframes stamp {
+  from { opacity: 0; transform: rotate(-7deg) scale(2.4); }
+  60% { opacity: 1; }
+}
+
+@keyframes flare {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--res) 45%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+
+.verdicts.is-shake {
+  animation: shake 0.45s var(--ease-io);
+}
+
+@keyframes shake {
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Pointer spotlight + glowing edge ------------------------------------ */
+
+.has-spot {
+  isolation: isolate;
+}
+
+.has-spot:not(.readout) {
+  position: relative;
+}
+
+.spot {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s;
+  background: radial-gradient(440px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--accent) 13%, transparent), transparent 45%);
+}
+
+.spot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--accent-2) 80%, transparent), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.has-spot:hover > .spot {
+  opacity: 1;
+}
+
+/* 3D tilt -------------------------------------------------------------- */
+
+.js .case.tilt.is-in:hover,
+.js .cap-group.tilt.is-in:hover {
+  transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-5px);
+  transition: transform 0.2s ease-out, border-color 0.3s, box-shadow 0.4s, opacity 0.3s, scale 0.3s;
+  transition-delay: 0s;
+}
+
+.portrait__img.tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.35s ease-out;
+}
+
+.glare {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.2), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.35s;
+}
+
+.portrait__img:hover .glare {
+  opacity: 1;
+}
+
+/* Magnetic buttons (translate composes with the hover transform) -------- */
+
+.motion .btn {
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease),
+    background-color 0.25s var(--ease), border-color 0.25s var(--ease), translate 0.35s var(--ease);
+}
+
+.motion .icon-btn {
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s, translate 0.35s var(--ease);
+}
+
+.motion .btn:not(.btn--ghost)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  pointer-events: none;
+}
+
+.motion .btn:not(.btn--ghost):hover::after {
+  animation: shine 0.9s var(--ease);
+}
+
+@keyframes shine {
+  from { background-position: 120% 0; }
+  to { background-position: -30% 0; }
+}
+
+/* Cursor reticle -------------------------------------------------------- */
+
+.cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 250;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1.5px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s, width 0.3s var(--ease), height 0.3s var(--ease), margin 0.3s var(--ease),
+    background-color 0.3s, border-color 0.3s, border-radius 0.3s;
+}
+
+.cursor::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+.cursor.is-on { opacity: 1; }
+
+.cursor.is-card {
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  border-style: dashed;
+  animation: spin 6s linear infinite;
+}
+
+.cursor.is-hot {
+  width: 58px;
+  height: 58px;
+  margin: -29px 0 0 -29px;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.cursor.is-down {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+}
+
+@keyframes spin {
+  to { rotate: 360deg; }
+}
+
+/* Footer marquee -------------------------------------------------------- */
+
+.footer {
+  overflow: hidden;
+}
+
+.footer__marquee {
+  margin: calc(clamp(3rem, 7vw, 5rem) * -0.4) 0 clamp(2rem, 5vw, 3.5rem);
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.footer__marquee-track {
+  display: flex;
+  width: max-content;
+  font-size: clamp(3rem, 10vw, 8.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--line-3);
+  animation: slide 48s linear infinite;
+}
+
+.footer__marquee-track span {
+  padding-right: 0.35em;
+  transition: color 0.4s, -webkit-text-stroke-color 0.4s;
+}
+
+.footer__marquee-track span:nth-child(even) {
+  -webkit-text-stroke-color: color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+.footer__marquee:hover .footer__marquee-track span:hover {
+  color: var(--accent);
+  -webkit-text-stroke-color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
    17. Motion + print
    -------------------------------------------------------------------------- */
 
@@ -2956,6 +3478,8 @@ kbd {
   .js [data-reveal] { opacity: 1; transform: none; }
   .hero__title .ln > span { transform: none; }
   .ticker__track { animation: none; }
+  .footer__marquee-track { animation: none; }
+  .hero__grid::after { display: none; }
   .pin { animation: none; }
   #field { display: none; }
 }
@@ -2999,6 +3523,11 @@ kbd {
   .matrix-panel,
   .readout,
   .footer__btns,
+  .footer__marquee,
+  .cursor,
+  .spot,
+  .glare,
+  .stamp,
   .footer__cta,
   .footer__nav,
   .socials {
@@ -3019,6 +3548,18 @@ kbd {
   /* Anything below the fold has not been revealed yet, so force it visible
      rather than printing blank sections. */
   .js [data-reveal] { opacity: 1 !important; transform: none !important; }
+  .split .w > span,
+  .matrix .cell,
+  .code .cl {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+  .hero__in { opacity: 1 !important; translate: none !important; }
+  .hero__title .grad::before,
+  .hero__title .grad::after,
+  .eyebrow::before { display: none; }
   .hero__title .ln > span { transform: none !important; animation: none !important; }
   .meter i { transform: none !important; }
   .meter i.on { background: #000 !important; }
