@@ -1229,7 +1229,8 @@ ol {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--bg) 78%, transparent));
+  /* Dark in both themes: a light wash would grey out the photo. */
+  background: linear-gradient(180deg, transparent 68%, rgba(8, 9, 12, 0.55));
 }
 
 .portrait__tag {
