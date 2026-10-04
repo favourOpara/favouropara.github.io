@@ -1418,7 +1418,7 @@
           line("Favour Sobechi Opara", "hi");
           lines([
             "SOC analyst, cybersecurity and IT risk.",
-            "MSc Cybersecurity, University of Sunderland.",
+            "MSc Cybersecurity with Distinction, University of Sunderland.",
             "Based in Sunderland, UK. Open to SOC roles, 24/7 shifts and relocation."
           ]);
         }
@@ -1441,7 +1441,7 @@
         d: "degrees",
         run: function () {
           lines([
-            "2024 to 2025  MSc Cybersecurity, University of Sunderland",
+            "2024 to 2025  MSc Cybersecurity (Distinction), University of Sunderland",
             "2014 to 2019  BEng Mechanical Engineering, Landmark University"
           ]);
         }

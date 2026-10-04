@@ -388,6 +388,45 @@ ol {
   white-space: nowrap;
 }
 
+/* Academic honours: gold, so it reads as an award rather than a tag. */
+.chip--award,
+.award {
+  --gold: #e8b64c;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: color-mix(in srgb, var(--gold) 85%, var(--ink));
+}
+
+:root[data-theme="light"] .chip--award,
+:root[data-theme="light"] .award {
+  --gold: #a86f00;
+}
+
+.chip--award::before,
+.award::before {
+  content: "";
+  width: 0.7em;
+  height: 0.7em;
+  flex: none;
+  background: currentColor;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.award {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  vertical-align: 0.35em;
+}
+
 /* --------------------------------------------------------------------------
    5. Boot overlay
    -------------------------------------------------------------------------- */
