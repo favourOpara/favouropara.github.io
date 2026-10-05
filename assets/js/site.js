@@ -633,6 +633,113 @@
     }
   })();
 
+  /* ------------------------------------------- Venture showcase gallery */
+
+  (function showcase() {
+    var root_ = $(".showcase");
+    if (!root_) return;
+
+    var tabs = $$(".showcase__tabs button", root_);
+    var deskImgs = $$(".browser__view img", root_);
+    var phoneImgs = $$(".phone__view img", root_);
+    var urlEl = $(".browser__url span", root_);
+    var capEl = $(".showcase__cap", root_);
+    if (!tabs.length || deskImgs.length < 2 || phoneImgs.length < 2) return;
+
+    var DUR = 6500;
+    var at = 0;
+    var front = 0;
+    var timer = null;
+    var paused = false;
+    var inView = false;
+
+    root_.style.setProperty("--dur", DUR + "ms");
+
+    function swap(imgs, src, tall) {
+      var next = imgs[1 - front];
+      var cur = imgs[front];
+      next.classList.toggle("is-tall", !!tall);
+      var show = function () {
+        next.classList.add("is-on");
+        cur.classList.remove("is-on");
+      };
+      if (next.getAttribute("src") === src && next.complete) { show(); return; }
+      next.onload = show;
+      next.src = src;
+    }
+
+    function go(i, user) {
+      var nextAt = (i + tabs.length) % tabs.length;
+      if (nextAt !== at) {
+        var nt = tabs[nextAt];
+        swap(deskImgs, nt.getAttribute("data-desktop"), nt.hasAttribute("data-tall"));
+        swap(phoneImgs, nt.getAttribute("data-mobile"), false);
+        front = 1 - front;
+      }
+      at = nextAt;
+      var t = tabs[at];
+      tabs.forEach(function (b, k) {
+        b.setAttribute("aria-selected", String(k === at));
+        b.tabIndex = k === at ? 0 : -1;
+        b.classList.remove("is-run");
+      });
+      deskImgs.forEach(function (im) { im.alt = t.getAttribute("data-alt") + ", desktop view"; });
+      phoneImgs.forEach(function (im) { im.alt = t.getAttribute("data-alt") + ", mobile view"; });
+      if (urlEl) urlEl.textContent = t.getAttribute("data-path") || "";
+      if (capEl) capEl.textContent = t.getAttribute("data-cap") || "";
+      if (!reduced) {
+        void t.offsetWidth;
+        t.classList.add("is-run");
+      }
+      if (user) restart();
+    }
+
+    function tick() {
+      if (paused || !inView || document.hidden) return;
+      go(at + 1, false);
+    }
+
+    function restart() {
+      clearInterval(timer);
+      timer = reduced ? null : setInterval(tick, DUR);
+    }
+
+    tabs.forEach(function (b, i) {
+      b.addEventListener("click", function () { go(i, true); });
+      b.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1
+          : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        go(at + d, true);
+        tabs[at].focus();
+      });
+    });
+
+    // Hovering the stage pauses the reel so a visitor can read a page.
+    var stage = $(".showcase__stage", root_);
+    if (stage) {
+      stage.addEventListener("mouseenter", function () { paused = true; root_.classList.add("is-paused"); });
+      stage.addEventListener("mouseleave", function () { paused = false; root_.classList.remove("is-paused"); });
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        inView = entries[0].isIntersecting;
+        root_.classList.toggle("is-live", inView);
+      }, { threshold: 0.3 }).observe(root_);
+    } else {
+      inView = true;
+    }
+
+    // Layer 0 already holds the first slide in the markup.
+    deskImgs[0].classList.add("is-on");
+    phoneImgs[0].classList.add("is-on");
+    deskImgs[0].classList.toggle("is-tall", tabs[0].hasAttribute("data-tall"));
+    go(0, false);
+    restart();
+  })();
+
   /* ------------------------------------------------------- Nav + progress */
 
   var nav = $(".nav");
