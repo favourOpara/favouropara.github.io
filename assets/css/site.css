@@ -353,6 +353,14 @@ ol {
   box-shadow: 0 14px 34px -12px var(--glow);
 }
 
+/* The hover lift moves the hit box up; extend it downward by the same
+   amount so a pointer resting on the bottom edge cannot flicker it. */
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -4px;
+}
+
 .btn:active {
   transform: translateY(0);
 }
@@ -560,6 +568,7 @@ ol {
 }
 
 .nav__links a {
+  white-space: nowrap;
   position: relative;
   display: block;
   padding: 0.5rem 0.8rem;
@@ -867,13 +876,16 @@ ol {
 }
 
 /* Availability as a spec sheet: label over value, hairline separated. */
+/* Every item carries a left divider; the strip is pulled left and clipped
+   so whichever item starts a row, its divider falls outside the frame. */
 .spec {
   display: flex;
   flex-wrap: wrap;
   row-gap: 0.9rem;
-  margin: 0;
-  border-top: 1px solid var(--line-2);
+  margin: 0 0 0 calc(-1.4rem - 1px);
   padding-top: 0.85rem;
+  border-top: 1px solid var(--line-2);
+  clip-path: inset(0 0 0 calc(1.4rem + 1px));
 }
 
 .spec > div {
@@ -881,11 +893,6 @@ ol {
   gap: 0.25rem;
   padding: 0 1.4rem;
   border-left: 1px solid var(--line-2);
-}
-
-.spec > div:first-child {
-  padding-left: 0;
-  border-left: 0;
 }
 
 .spec dt {
@@ -902,6 +909,27 @@ ol {
   font-size: 0.8rem;
   color: var(--ink);
   white-space: nowrap;
+}
+
+.spec__venture dd a {
+  color: var(--accent-2);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--accent-2) 60%, transparent);
+}
+
+.inline-link {
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--accent-2);
+}
+
+/* The venture leads the timeline, so it gets the accent node. */
+.tl__item--venture::before {
+  background: var(--accent-2) !important;
+  box-shadow: 0 0 0 4px var(--glow-2), 0 0 18px var(--accent-2) !important;
+}
+
+.tl__where a {
+  color: var(--accent-2);
 }
 
 .spec__award {
@@ -928,8 +956,8 @@ ol {
     grid-template-columns: 1fr 1fr;
     column-gap: 1rem;
   }
-  .spec > div,
-  .spec > div:first-child {
+  .spec { margin-left: 0; clip-path: none; }
+  .spec > div {
     padding: 0;
     border-left: 0;
   }
@@ -3451,9 +3479,10 @@ kbd {
   display: flex;
   flex-wrap: wrap;
   row-gap: 0.9rem;
-  margin: 0 0 clamp(2rem, 4vw, 3rem);
+  margin: 0 0 clamp(2rem, 4vw, 3rem) calc(-1.6rem - 1px);
   padding: 0.95rem 0;
   border-block: 1px solid var(--line-2);
+  clip-path: inset(0 0 0 calc(1.6rem + 1px));
 }
 
 .venture-role > div {
@@ -3461,11 +3490,6 @@ kbd {
   gap: 0.25rem;
   padding: 0 1.6rem;
   border-left: 1px solid var(--line-2);
-}
-
-.venture-role > div:first-child {
-  padding-left: 0;
-  border-left: 0;
 }
 
 .venture-role dt {
@@ -3646,9 +3670,12 @@ kbd {
   aspect-ratio: 390 / 844;
 }
 
+/* Captions differ in length; reserve the tallest so nothing below jumps
+   when the slide changes. */
 .showcase__cap {
   margin-top: 1rem;
-  min-height: 1.6em;
+  min-height: 3.2em;
+  line-height: 1.6;
   font-family: var(--font-mono);
   font-size: 0.74rem;
   color: var(--ink-3);
@@ -3850,18 +3877,115 @@ kbd {
   color: var(--ink-3);
 }
 
+.money {
+  position: relative;
+  display: grid;
+  counter-reset: m;
+  margin-bottom: 1.2rem;
+}
+
+/* Rail down the left edge with a coin of light travelling along it. */
+.money::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--heat-1), var(--accent-2) 60%, var(--accent));
+  opacity: 0.45;
+}
+
+.money::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 12px;
+  width: 10px;
+  height: 10px;
+  background: var(--gold, #e8b64c);
+  box-shadow: 0 0 14px 3px rgba(232, 182, 76, 0.65);
+  animation: coin 5.2s var(--ease-io) infinite;
+}
+
+@keyframes coin {
+  0% { top: 12px; opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { top: calc(100% - 22px); opacity: 0; }
+}
+
+.money li {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.7rem 0 0.7rem 3rem;
+  counter-increment: m;
+}
+
+.money li::before {
+  content: "0" counter(m);
+  position: absolute;
+  left: 0;
+  top: 0.7rem;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--accent-2);
+}
+
+.money li:last-child::before {
+  border-color: var(--heat-1);
+  color: var(--heat-1);
+}
+
+.money b {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.money span {
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+.money__alt {
+  padding: 0.85rem 1rem;
+  border-left: 2px solid var(--heat-3);
+  background: color-mix(in srgb, var(--heat-3) 8%, transparent);
+  color: var(--ink-2);
+  font-size: 0.9rem;
+}
+
+.money__alt b {
+  color: var(--ink);
+}
+
+.money__why {
+  margin: 1.2rem 0 1.4rem;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
 @media (max-width: 1000px) {
   .venture-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 640px) {
   .venture-role { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1rem; }
-  .venture-role > div,
-  .venture-role > div:first-child { padding: 0; border-left: 0; }
+  .venture-role { margin-left: 0; clip-path: none; }
+  .venture-role > div { padding: 0; border-left: 0; }
   .showcase__stage { padding-right: 0; padding-bottom: 0; }
   .phone { position: relative; width: 46%; margin: -28% 0 0 auto; }
   .owns li { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
   .browser__url { font-size: 0.64rem; }
+  .showcase__cap { min-height: 6.4em; }
 }
 
 /* Corner registration marks ---------------------------------------------- */
@@ -4509,6 +4633,7 @@ kbd {
   .hero__in { opacity: 1 !important; translate: none !important; }
   .hero__title .grad::before,
   .hero__title .grad::after,
+  .money::after,
   .eyebrow::before { display: none; }
   .hero__title .ln > span { transform: none !important; animation: none !important; }
   .meter i { transform: none !important; }

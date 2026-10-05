@@ -725,8 +725,11 @@
 
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
+        var was = inView;
         inView = entries[0].isIntersecting;
         root_.classList.toggle("is-live", inView);
+        // Start the clock and the run bar together as it comes into view.
+        if (inView && !was) go(at, true);
       }, { threshold: 0.3 }).observe(root_);
     } else {
       inView = true;
@@ -1451,6 +1454,7 @@
       top: "top", home: "top",
       about: "about", profile: "about",
       soc: "soc", ops: "soc",
+      venture: "venture", abatrades: "venture",
       lab: "lab", triage: "lab",
       risk: "risk", matrix: "risk",
       skills: "capabilities", capabilities: "capabilities",
@@ -1528,13 +1532,30 @@
           lines([
             "SOC analyst, cybersecurity and IT risk.",
             "MSc Cybersecurity with Distinction, University of Sunderland.",
+            "Co-founder and CTO of Abatrades (abatrades.org).",
             "Based in Sunderland, UK. Open to SOC roles, 24/7 shifts and relocation."
           ]);
+        }
+      },
+      abatrades: {
+        d: "the marketplace I co-founded and built",
+        run: function () {
+          line("Abatrades / Co-founder & CTO", "hi");
+          lines([
+            "Nigeria's marketplace connecting buyers with trusted stores.",
+            "  escrow      payments held until the buyer confirms delivery",
+            "  disputes    store answers, Abatrades decides, refund to bank",
+            "  fulfilment  sell direct, dropship, or use our warehouse",
+            "  stack       React + Vite, Django REST API, Railway, Cloudflare"
+          ]);
+          linkLine("visit     https://abatrades.org", "https://abatrades.org");
         }
       },
       experience: {
         d: "career timeline",
         run: function () {
+          line("Present           Co-founder & CTO, Abatrades", "hi");
+          line("                  Built a live two-sided marketplace with escrow payments.");
           line("Sep 2025 to now   CCTV Security Officer, Tesco, Sunderland", "hi");
           line("                  Real-time monitoring, escalation, evidence packages.");
           line("Aug 2022 to 2024  Cybersecurity & IT Risk Analyst, Fidelity Bank Plc", "hi");
@@ -1602,7 +1623,7 @@
       ls: {
         d: "list sections",
         run: function () {
-          line("about  soc  lab  risk  skills  experience  work  contact");
+          line("about  venture  soc  lab  risk  skills  experience  work  contact");
         }
       },
       goto: {
