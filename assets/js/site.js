@@ -340,35 +340,42 @@
 
       // Detection, then containment.
       if (!threat && ts > nextThreat && nodes.length) {
-        // On wide screens keep the event clear of the headline copy.
-        var pool = w > 900 ? nodes.filter(function (q) {
-          return q.x > w * 0.56 && q.x < w * 0.86 && q.y > h * 0.16 && q.y < h * 0.62;
-        }) : nodes;
+        // Keep the event in one consistent zone: clear of the headline on
+        // wide screens, and on phones in the upper right, inside the first
+        // screenful, rather than anywhere in a hero taller than the screen.
+        var pool = nodes.filter(function (q) {
+          return w > 900
+            ? q.x > w * 0.56 && q.x < w * 0.86 && q.y > h * 0.16 && q.y < h * 0.62
+            : q.x > w * 0.6 && q.x < w * 0.92 && q.y > h * 0.06 && q.y < Math.min(h * 0.5, window.innerHeight * 0.7);
+        });
         if (!pool.length) pool = nodes;
         threat = { n: pool[Math.floor(Math.random() * pool.length)], t0: ts };
       }
       if (threat) {
         var age = (ts - threat.t0) / 1000;
         var tn = threat.n;
+        // Scale with the canvas: a fixed 115px ring is subtle on a laptop but
+        // swallows a third of a phone screen.
+        var k = Math.max(0.45, Math.min(1, w / 1200));
         if (age < 1.8) {
-          var halo = ctx.createRadialGradient(tn.x, tn.y, 0, tn.x, tn.y, 46);
-          halo.addColorStop(0, "rgba(" + colors.threat + ", 0.35)");
+          var halo = ctx.createRadialGradient(tn.x, tn.y, 0, tn.x, tn.y, 46 * k);
+          halo.addColorStop(0, "rgba(" + colors.threat + "," + (0.35 * k).toFixed(2) + ")");
           halo.addColorStop(1, "rgba(" + colors.threat + ", 0)");
           ctx.fillStyle = halo;
           ctx.beginPath();
-          ctx.arc(tn.x, tn.y, 46, 0, Math.PI * 2);
+          ctx.arc(tn.x, tn.y, 46 * k, 0, Math.PI * 2);
           ctx.fill();
           for (var ring = 0; ring < 3; ring++) {
             var ph = ((age + ring * 0.3) % 0.9) / 0.9;
             ctx.strokeStyle = "rgba(" + colors.threat + "," + (1 - ph) + ")";
             ctx.lineWidth = 1.8;
             ctx.beginPath();
-            ctx.arc(tn.x, tn.y, 5 + ph * 52, 0, Math.PI * 2);
+            ctx.arc(tn.x, tn.y, (5 + ph * 52) * k, 0, Math.PI * 2);
             ctx.stroke();
           }
           ctx.fillStyle = "rgba(" + colors.threat + ", 1)";
           ctx.beginPath();
-          ctx.arc(tn.x, tn.y, 4.5, 0, Math.PI * 2);
+          ctx.arc(tn.x, tn.y, 4.5 * Math.max(k, 0.7), 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "500 12px 'IBM Plex Mono', monospace";
           // Labels would sit on top of the copy on narrow screens.
@@ -379,20 +386,20 @@
           ctx.strokeStyle = "rgba(" + colors.ok + "," + (1 - q * 0.5) + ")";
           ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(tn.x, tn.y, 44 - e2 * 32, 0, Math.PI * 2);
+          ctx.arc(tn.x, tn.y, (44 - e2 * 32) * k, 0, Math.PI * 2);
           ctx.stroke();
           // Lock brackets close in around the node.
-          var br = 22 - e2 * 10;
+          var br = (22 - e2 * 10) * k;
           ctx.beginPath();
           [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (c) {
-            ctx.moveTo(tn.x + c[0] * br, tn.y + c[1] * (br - 6));
+            ctx.moveTo(tn.x + c[0] * br, tn.y + c[1] * (br - 6 * k));
             ctx.lineTo(tn.x + c[0] * br, tn.y + c[1] * br);
-            ctx.lineTo(tn.x + c[0] * (br - 6), tn.y + c[1] * br);
+            ctx.lineTo(tn.x + c[0] * (br - 6 * k), tn.y + c[1] * br);
           });
           ctx.stroke();
           ctx.fillStyle = "rgba(" + colors.ok + "," + (1 - q * 0.4) + ")";
           ctx.beginPath();
-          ctx.arc(tn.x, tn.y, 4, 0, Math.PI * 2);
+          ctx.arc(tn.x, tn.y, 4 * Math.max(k, 0.7), 0, Math.PI * 2);
           ctx.fill();
           ctx.font = "500 12px 'IBM Plex Mono', monospace";
           // Labels would sit on top of the copy on narrow screens.
